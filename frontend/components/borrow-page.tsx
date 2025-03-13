@@ -116,6 +116,10 @@ export function BorrowPage() {
         title: "Borrow successful",
         description: `You have successfully borrowed ${amount} ${selectedAsset}`,
       })
+
+      // Simulate updating the borrowed assets
+      // In a real app, this would come from the blockchain
+      console.log(`Borrowed ${amount} ${selectedAsset}`)
     }, 2000)
   }
 
@@ -129,9 +133,9 @@ export function BorrowPage() {
     }
   }
 
-  const borrowAmountValue = Number.parseFloat(amount) || 0
-  const newHealthFactor = calculateNewHealthFactor(borrowAmountValue)
-  const newBorrowLimitUsed = calculateNewBorrowLimitUsed(borrowAmountValue)
+  const borrowAmountValue = amount ? Number.parseFloat(amount) : 0
+  const newHealthFactor = !isNaN(borrowAmountValue) ? calculateNewHealthFactor(borrowAmountValue) : undefined
+  const newBorrowLimitUsed = !isNaN(borrowAmountValue) ? calculateNewBorrowLimitUsed(borrowAmountValue) : undefined
 
   return (
     <FadeIn>
@@ -359,13 +363,14 @@ export function BorrowPage() {
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span>Borrow Limit Used</span>
-                          <span className={newBorrowLimitUsed > 80 ? "text-red-500" : ""}>
-                            {userStats.borrowLimitUsed.toFixed(2)}% → {newBorrowLimitUsed.toFixed(2)}%
+                          <span className={newBorrowLimitUsed && newBorrowLimitUsed > 80 ? "text-red-500" : ""}>
+                            {userStats.borrowLimitUsed.toFixed(2)}% →{" "}
+                            {newBorrowLimitUsed !== undefined ? newBorrowLimitUsed.toFixed(2) : "--"}%
                           </span>
                         </div>
                         <Progress
-                          value={newBorrowLimitUsed}
-                          className={`h-2 ${newBorrowLimitUsed > 80 ? "bg-red-500" : ""}`}
+                          value={newBorrowLimitUsed !== undefined ? newBorrowLimitUsed : 0}
+                          className={`h-2 ${newBorrowLimitUsed !== undefined && newBorrowLimitUsed > 80 ? "bg-red-500" : ""}`}
                         />
                       </div>
 
@@ -374,24 +379,29 @@ export function BorrowPage() {
                           <span>Health Factor</span>
                           <span
                             className={
-                              newHealthFactor < 1.1
-                                ? "text-red-500"
-                                : newHealthFactor < 1.5
-                                  ? "text-yellow-500"
-                                  : "text-green-500"
+                              newHealthFactor !== undefined
+                                ? newHealthFactor < 1.1
+                                  ? "text-red-500"
+                                  : newHealthFactor < 1.5
+                                    ? "text-yellow-500"
+                                    : "text-green-500"
+                                : ""
                             }
                           >
-                            {userStats.healthFactor.toFixed(2)} → {newHealthFactor.toFixed(2)}
+                            {userStats.healthFactor.toFixed(2)} →{" "}
+                            {newHealthFactor !== undefined ? newHealthFactor.toFixed(2) : "--"}
                           </span>
                         </div>
                         <Progress
-                          value={Math.min((newHealthFactor / 2) * 100, 100)}
+                          value={newHealthFactor !== undefined ? Math.min((newHealthFactor / 2) * 100, 100) : 0}
                           className={`h-2 ${
-                            newHealthFactor < 1.1
-                              ? "bg-red-500"
-                              : newHealthFactor < 1.5
-                                ? "bg-yellow-500"
-                                : "bg-green-500"
+                            newHealthFactor !== undefined
+                              ? newHealthFactor < 1.1
+                                ? "bg-red-500"
+                                : newHealthFactor < 1.5
+                                  ? "bg-yellow-500"
+                                  : "bg-green-500"
+                              : "bg-gray-300"
                           }`}
                         />
                       </div>
@@ -406,13 +416,7 @@ export function BorrowPage() {
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Button
                       onClick={() => setIsConfirmOpen(true)}
-                      disabled={
-                        !amount ||
-                        Number.parseFloat(amount) <= 0 ||
-                        Number.parseFloat(amount) > (getSelectedAssetDetails()?.available || 0) ||
-                        newHealthFactor < 1.03 ||
-                        newBorrowLimitUsed > 95
-                      }
+                      disabled={!amount || isNaN(Number(amount)) || Number(amount) <= 0}
                     >
                       Continue
                     </Button>
@@ -469,7 +473,7 @@ export function BorrowPage() {
                         : "text-green-500"
                   }
                 >
-                  {newHealthFactor.toFixed(2)}
+                  {newHealthFactor?.toFixed(2)}
                 </span>
               </div>
 
@@ -496,4 +500,3 @@ export function BorrowPage() {
 
 // Import Table components for the borrow page
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-
